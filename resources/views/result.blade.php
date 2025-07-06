@@ -31,19 +31,26 @@
                     <h3>Gejala Anamnesis (Wawancara Medis) Yang Dialami Oleh Pasien:</h3>
                 </div>
                 <div class="card-body">
-                    @if ($gejala->count() > 0)
+                    @if ($gejalaMinimalCF->count() > 0)
                         <div class="row">
-                            @foreach ($gejala as $g)
+                            @foreach ($gejalaMinimalCF as $kodeGejala)
                                 <div class="col-md-4">
-                                    <div class="list-group-item">{{ $g->nama_gejala }}</div>
+                                    <div class="list-group-item">
+                                        {{-- Menampilkan nama gejala berdasarkan kode gejala --}}
+                                        @php
+                                            $gejalaItem = $gejala->firstWhere('kode_gejala', $kodeGejala);
+                                        @endphp
+                                        {{ $gejalaItem ? $gejalaItem->nama_gejala : 'Gejala tidak ditemukan' }}
+                                    </div>
                                 </div>
                             @endforeach
                         </div>
                     @else
-                        <p>Tidak ada gejala yang dipilih.</p>
+                        <p>Tidak ada gejala dengan nilai CF >= 0.6 yang dipilih.</p>
                     @endif
                 </div>
             </div>
+
             {{-- Card Kesimpulan --}}
             <div class="row">
                 <div class="col-md-12">
@@ -53,16 +60,21 @@
                         </div>
                         <div class="card-body">
                             @if ($penyakit)
-                                <p>BERDASARKAN GEJALA ANAMNESIS YANG DIALAMI OLEH PASIEN MAKA SISTEM MENDETEKSI BEBERAPA PENYAKIT YANG DIALAMI:
+                                <h5 class="mt-3">
+                                    Kesimpulan:
+                                </h5>
+                                <p>BERDASARKAN GEJALA ANAMNESIS YANG DIALAMI OLEH PASIEN MAKA SISTEM MENDETEKSI BEBERAPA
+                                    KEMUNGKINAN
+                                    PENYAKIT YANG DIALAMI:
                                 </p>
                                 @foreach ($hasil as $kode => $cf)
-                                    @if (number_format($cf * 100, 2) == number_format($nilaiCfTertinggi * 100, 2))
+                                    @if (number_format($cf, 2) == number_format($nilaiCfTertinggi, 2))
                                         @php
                                             $p = \App\Models\Penyakit::where('kode_penyakit', $kode)->first();
                                         @endphp
                                         <div class="alert alert-success text-center"
                                             style="font-size: 1.2rem; font-weight: bold;">
-                                            {{ $p->nama_penyakit ?? $kode }} - {{ number_format($cf * 100, 2) }}%
+                                            {{ $p->nama_penyakit ?? $kode }} - {{ number_format($cf, 2) }}%
                                         </div>
                                     @endif
                                 @endforeach
@@ -70,10 +82,11 @@
                                     Disclaimer:
                                 </h5>
                                 <p class="mt-3" style="color: red;">
-                                    Hasil deteksi dini ini merupakan hasil dugaan sementara berdasarkan
+                                    Hasil deteksi dini ini merupakan hasil dugaan sementara (SUSPECT) berdasarkan
                                     gejala yang Anda alami memiliki kemiripan dengan penyakit pada poin KESIMPULAN.
                                     Untuk mendapatkan hasil diagnosa penyakit yang tepat, segera konsultasikan kepada
-                                    Dokter Spesialis Hematologi atau lakukan penelitian laboratorium lebih lanjut di fasilitas kesehatan terdekat.
+                                    Dokter Spesialis Hematologi atau lakukan penelitian laboratorium lebih lanjut di
+                                    fasilitas kesehatan terdekat.
                                 </p>
                                 <h5 class="mt-4">Hasil Deteksi:</h5>
                                 @if (count($hasil) > 0)
@@ -91,7 +104,7 @@
                                                 @endphp
                                                 <tr>
                                                     <td>{{ $p->nama_penyakit ?? $kode }}</td>
-                                                    <td>{{ number_format($cf * 100, 2) }}</td>
+                                                    <td>{{ number_format($cf, 2) }}%</td>
                                                 </tr>
                                             @endforeach
                                         </tbody>

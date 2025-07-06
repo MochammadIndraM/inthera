@@ -16,7 +16,6 @@ class DeteksiController extends Controller
         return view('deteksi', compact('deteksi')); // Kirim ke view
     }
 
-
     public function process(Request $request)
     {
         // Ambil input CF dari user
@@ -29,7 +28,7 @@ class DeteksiController extends Controller
 
         // Pemetaan input ke kode_gejala, hanya ambil yang valid
         $selectedGejala = $userInput->keys()->map(function ($key) {
-            // Ambil angka dari nama input (cf01, cf02, ...)
+            // Ambil angka dari nama input (cf01, cf02, ... )
             preg_match('/cf(\d+)/', $key, $matches);
             $index = isset($matches[1]) ? (int) $matches[1] : 0;
 
@@ -40,14 +39,14 @@ class DeteksiController extends Controller
             return in_array($kodeGejala, $validGejala);
         });
 
-        // Filter gejala berdasarkan nilai CF user >= 0.6
-        $filteredGejala = $selectedGejala->filter(function ($kodeGejala) use ($userInput) {
+        // Ambil data gejala yang dipilih
+        $gejala = Gejala::whereIn('kode_gejala', $selectedGejala)->get();
+
+        // Filter gejala untuk ditampilkan pada view (CF >= 0.6)
+        $gejalaMinimalCF = $selectedGejala->filter(function ($kodeGejala) use ($userInput) {
             $cfUser = $this->ambilNilaiCFUser($userInput, $kodeGejala);
             return $cfUser >= 0.6;
         });
-
-        // Ambil data gejala yang dipilih dan sudah difilter
-        $gejala = Gejala::whereIn('kode_gejala', $filteredGejala)->get();
 
         // Proses Forward Chaining
         $groupedRules = Rule::getGroupedRules();
@@ -58,6 +57,7 @@ class DeteksiController extends Controller
             $gejalaRule = $rule['kode_gejala'];
 
             $cfGabungan = null;
+            $gejalaTerdeteksi = 0;
 
             foreach ($gejalaRule as $kodeGejala) {
                 $cfUser = $this->ambilNilaiCFUser($userInput, $kodeGejala);
@@ -66,13 +66,25 @@ class DeteksiController extends Controller
                     ->value('nilai_cf');
 
                 if (!is_null($cfUser) && !is_null($cfPakar)) {
-                    $cf = $cfUser * $cfPakar;
-                    $cfGabungan = is_null($cfGabungan) ? $cf : $cfGabungan + $cf * (1 - $cfGabungan);
+                    // Mengalikan CF user dan CF pakar terlebih dahulu
+                    $cfUserPakar = $cfUser * $cfPakar;
+
+                    // Gabungkan CF dengan rumus yang benar
+                    $cfGabungan = is_null($cfGabungan) ? $cfUserPakar : $cfGabungan + ($cfUserPakar * (1 - $cfGabungan));
+                    $gejalaTerdeteksi++;
                 }
             }
 
+            // Jika hanya satu gejala yang terdeteksi, tidak perlu gabungkan dengan gejala lainnya
+            if ($gejalaTerdeteksi == 1) {
+                // Gunakan rumus yang tepat untuk satu gejala
+                $cfGabungan = $cfUser * $cfPakar; // Hanya dihitung dari gejala tersebut
+            }
+
+            // Pastikan hasilnya dihitung dengan benar
             if (!is_null($cfGabungan)) {
-                $hasil[$kodePenyakit] = $cfGabungan;
+                // Simpan hasil dalam bentuk persen (0–100%)
+                $hasil[$kodePenyakit] = $cfGabungan * 100; // Ubah ke persen
             }
         }
 
@@ -81,10 +93,11 @@ class DeteksiController extends Controller
         $penyakitTertinggi = key($hasil);
         $nilaiCfTertinggi = reset($hasil);
 
+        // Ambil data penyakit berdasarkan kode penyakit yang memiliki CF tertinggi
         $penyakit = Penyakit::where('kode_penyakit', $penyakitTertinggi)->first();
 
         // Kirim data ke view
-        return view('result', compact('hasil', 'penyakit', 'nilaiCfTertinggi', 'gejala', 'selectedGejala'));
+        return view('result', compact('hasil', 'penyakit', 'nilaiCfTertinggi', 'gejala', 'selectedGejala', 'gejalaMinimalCF'));
     }
 
 

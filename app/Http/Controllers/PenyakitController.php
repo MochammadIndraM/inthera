@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Gejala;
 use App\Models\Penyakit;
 use Illuminate\Http\Request;
 
@@ -71,6 +72,9 @@ class PenyakitController extends Controller
     public function dashboard()
     {
         $totalPenyakit = Penyakit::count();
-        return view('master-data.dashboard', compact('totalPenyakit'));
+        $totalGejala = Gejala::count(); // Ambil data gejala juga
+
+        // Kirim kedua data ke view
+        return view('master-data.dashboard', compact('totalPenyakit', 'totalGejala'));
     }
 }

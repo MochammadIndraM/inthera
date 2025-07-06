@@ -67,7 +67,6 @@
     <script src="assets/static/js/pages/sweetalert2.js"></script>
     <!-- Tambahkan ini di layout utama -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     @if (session('success'))
         <script>
             Swal.fire({
@@ -79,7 +78,16 @@
             });
         </script>
     @endif
-
+    @if ($errors->any())
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Login Gagal!',
+                text: '{{ $errors->first() }}',
+                showConfirmButton: true,
+            });
+        </script>
+    @endif
 
 </body>
 

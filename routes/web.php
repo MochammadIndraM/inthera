@@ -29,9 +29,7 @@ Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('master-data.dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [PenyakitController::class, 'dashboard'])->name('dashboard');
 
     Route::get('/data-penyakit', [PenyakitController::class, 'index'])->name('data-penyakit');
     Route::post('/data-penyakit', [PenyakitController::class, 'store'])->name('penyakit.store');

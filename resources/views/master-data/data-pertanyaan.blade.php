@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('content')
     <div class="page-heading">
-        <h3>Data Gejala</h3>
+        <h3>Data Pertanyaan</h3>
     </div>
     <div class="page-content">
         <section class="section">
